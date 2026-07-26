@@ -1,0 +1,23 @@
+{
+  "name": "feesweep",
+  "private": true,
+  "version": "0.1.0",
+  "description": "The creator fee command center for Solana launchpads",
+  "scripts": {
+    "dev": "pnpm --filter @feesweep/web dev",
+    "dev:keeper": "pnpm --filter @feesweep/keeper dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp"
+    ]
+  },
+  "packageManager": "pnpm@10.18.3"
+}
