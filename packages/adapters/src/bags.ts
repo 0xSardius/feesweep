@@ -1,5 +1,5 @@
 import type { AdapterHealth, TokenFeeState } from "@feesweep/core";
-import { AdapterError, type LaunchpadAdapter } from "./adapter.js";
+import { AdapterError, type LaunchpadAdapter } from "./adapter";
 
 const BASE_URL = "https://public-api-v2.bags.fm/api/v1";
 

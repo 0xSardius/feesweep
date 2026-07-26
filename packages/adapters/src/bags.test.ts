@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { AdapterError } from "./adapter.js";
-import { BagsAdapter } from "./bags.js";
-import { scanAllPlatforms } from "./scan.js";
+import { AdapterError } from "./adapter";
+import { BagsAdapter } from "./bags";
+import { scanAllPlatforms } from "./scan";
 
 const WALLET = "CreatorWallet1111111111111111111111111111111";
 const MINT_A = "MintAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";

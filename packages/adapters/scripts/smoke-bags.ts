@@ -2,7 +2,7 @@
  * Live smoke test against the real Bags API. Needs BAGS_API_KEY in env.
  *   pnpm --filter @feesweep/adapters smoke:bags <creator-wallet>
  */
-import { BagsAdapter } from "../src/bags.js";
+import { BagsAdapter } from "../src/bags";
 
 const wallet = process.argv[2];
 const apiKey = process.env.BAGS_API_KEY;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { TokenFeeState } from "@feesweep/core";
-import { enrichTokenMetadata } from "./metadata.js";
+import { enrichTokenMetadata } from "./metadata";
 
 const row = (overrides: Partial<TokenFeeState>): TokenFeeState => ({
   platform: "bags",

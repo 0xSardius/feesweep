@@ -1,5 +1,5 @@
-export * from "./adapter.js";
-export { scanAllPlatforms } from "./scan.js";
-export { BagsAdapter } from "./bags.js";
-export { PumpfunAdapter } from "./pumpfun.js";
-export { enrichTokenMetadata } from "./metadata.js";
+export * from "./adapter";
+export { scanAllPlatforms } from "./scan";
+export { BagsAdapter } from "./bags";
+export { PumpfunAdapter } from "./pumpfun";
+export { enrichTokenMetadata } from "./metadata";

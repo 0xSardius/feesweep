@@ -10,6 +10,15 @@ importers:
 
   apps/web:
     dependencies:
+      '@feesweep/adapters':
+        specifier: workspace:*
+        version: link:../../packages/adapters
+      '@feesweep/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@solana/kit':
+        specifier: ^7.0.0
+        version: 7.0.0(typescript@5.9.3)
       next:
         specifier: 16.2.12
         version: 16.2.12(react-dom@19.2.4(react@19.2.4))(react@19.2.4)

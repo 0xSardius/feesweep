@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { AdapterError } from "./adapter.js";
-import { PumpfunAdapter } from "./pumpfun.js";
+import { AdapterError } from "./adapter";
+import { PumpfunAdapter } from "./pumpfun";
 
 // Any valid base58 32-byte address works; PDAs are derived from it.
 const WALLET = "2zivsB28Ma58ND9jTtXa26CkBPVsjd79aQaHpo9eKqhF";

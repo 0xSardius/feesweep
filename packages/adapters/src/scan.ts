@@ -1,5 +1,5 @@
 import type { ScanResult } from "@feesweep/core";
-import type { LaunchpadAdapter } from "./adapter.js";
+import type { LaunchpadAdapter } from "./adapter";
 
 /**
  * Cross-platform scan: run every adapter, degrade per-platform on failure.

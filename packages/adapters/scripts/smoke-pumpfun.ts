@@ -2,7 +2,7 @@
  * Live smoke test against real pump.fun program state. Needs HELIUS_RPC_URL.
  *   pnpm --filter @feesweep/adapters smoke:pumpfun <creator-wallet>
  */
-import { PumpfunAdapter } from "../src/pumpfun.js";
+import { PumpfunAdapter } from "../src/pumpfun";
 
 const wallet = process.argv[2];
 const rpcUrl = process.env.HELIUS_RPC_URL;

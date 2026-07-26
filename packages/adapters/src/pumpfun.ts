@@ -6,7 +6,7 @@ import {
   address,
 } from "@solana/kit";
 import type { AdapterHealth, TokenFeeState } from "@feesweep/core";
-import { AdapterError, type LaunchpadAdapter } from "./adapter.js";
+import { AdapterError, type LaunchpadAdapter } from "./adapter";
 
 /** Pump bonding-curve program (verified against pump-fun/pump-public-docs). */
 const PUMP_PROGRAM = address("6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P");
