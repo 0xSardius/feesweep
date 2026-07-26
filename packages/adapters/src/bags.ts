@@ -16,6 +16,7 @@ interface ClaimablePosition {
   isMigrated: boolean;
   isCustomFeeVault: boolean;
   userBps?: number;
+  quoteMint?: string;
 }
 
 interface ClaimStat {
@@ -82,7 +83,9 @@ export class BagsAdapter implements LaunchpadAdapter {
     const tokens = await mapWithConcurrency(positions, 4, async (pos) => {
       const claimable = BigInt(Math.trunc(pos.totalClaimableLamportsUserShare));
       // Lifetime earned for THIS wallet = its past claims + claimable now.
-      // claim-stats is per-token; a miss degrades totalEarned to null, never
+      // claim-stats is per-token and lists a wallet only once it has claimed:
+      // absence on a successful response means zero claimed, so earned =
+      // claimable. Only a failed request degrades totalEarned to null — never
       // the whole scan.
       let totalEarned: bigint | null = null;
       try {
@@ -90,7 +93,7 @@ export class BagsAdapter implements LaunchpadAdapter {
           `/token-launch/claim-stats?tokenMint=${encodeURIComponent(pos.baseMint)}`,
         );
         const mine = stats.find((s) => s.wallet === wallet);
-        if (mine) totalEarned = BigInt(mine.totalClaimed) + claimable;
+        totalEarned = BigInt(mine?.totalClaimed ?? 0) + claimable;
       } catch {
         totalEarned = null;
       }
@@ -106,6 +109,7 @@ export class BagsAdapter implements LaunchpadAdapter {
         imageUrl: null,
         totalEarned,
         claimable,
+        quoteMint: pos.quoteMint ?? null,
         // Accrual rate is derived from successive scan snapshots (scans
         // table), not from any platform API.
         accrualPerDay: null,
@@ -119,16 +123,20 @@ export class BagsAdapter implements LaunchpadAdapter {
     return tokens;
   }
 
-  /** Wallet-scoped partner-config fees; null when the wallet has no config. */
+  /**
+   * Wallet-scoped partner-config fees; null when the wallet has no config.
+   * The live API answers 500 (not the documented 404) for wallets without a
+   * partner config, so any failure here degrades to "no partner row" rather
+   * than sinking the creator-position scan.
+   */
   private async partnerFeeState(wallet: string): Promise<TokenFeeState | null> {
     let stats: PartnerStats;
     try {
       stats = await this.request<PartnerStats>(
         `/fee-share/partner-config/stats?partner=${encodeURIComponent(wallet)}`,
       );
-    } catch (err) {
-      if (err instanceof AdapterError && err.status === 404) return null;
-      throw err;
+    } catch {
+      return null;
     }
     const claimable = BigInt(stats.unclaimedFees);
     const claimed = BigInt(stats.claimedFees);
@@ -142,6 +150,9 @@ export class BagsAdapter implements LaunchpadAdapter {
       imageUrl: null,
       totalEarned: claimed + claimable,
       claimable,
+      // Partner stats carry no denomination; Bags partner fees settle in SOL
+      // today, but display-layer should treat null as "assume SOL".
+      quoteMint: null,
       accrualPerDay: null,
     };
   }

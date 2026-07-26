@@ -40,6 +40,7 @@ describe("BagsAdapter.scanWallet", () => {
             isMigrated: true,
             isCustomFeeVault: false,
             userBps: 9000,
+            quoteMint: "So11111111111111111111111111111111111111112",
           },
         ],
         "claim-stats": () => [
@@ -61,6 +62,7 @@ describe("BagsAdapter.scanWallet", () => {
     expect(t.mint).toBe(MINT_A);
     expect(t.claimable).toBe(1_500_000_000n);
     expect(t.totalEarned).toBe(4_000_000_000n); // claimed 2.5 + claimable 1.5
+    expect(t.quoteMint).toBe("So11111111111111111111111111111111111111112");
   });
 
   it("degrades totalEarned to null when claim-stats fails, keeps claimable", async () => {
@@ -107,6 +109,47 @@ describe("BagsAdapter.scanWallet", () => {
     expect(p.mint).toBe(WALLET);
     expect(p.claimable).toBe(250_000_000n);
     expect(p.totalEarned).toBe(1_250_000_000n);
+  });
+
+  it("treats absence from a successful claim-stats as zero claimed (unclaimed-so-far token)", async () => {
+    const adapter = new BagsAdapter(
+      "test-key",
+      mockFetch({
+        "claimable-positions": () => [
+          {
+            baseMint: MINT_A,
+            totalClaimableLamportsUserShare: 500,
+            isMigrated: false,
+            isCustomFeeVault: false,
+          },
+        ],
+        "claim-stats": () => [],
+        "partner-config/stats": () => new Response("boom", { status: 500 }),
+      }),
+    );
+    const tokens = await adapter.scanWallet(WALLET);
+    expect(tokens[0]!.totalEarned).toBe(500n); // 0 claimed + 500 claimable
+  });
+
+  it("degrades partner entry to absent when partner-stats fails (live API 500s for no-config wallets)", async () => {
+    const adapter = new BagsAdapter(
+      "test-key",
+      mockFetch({
+        "claimable-positions": () => [
+          {
+            baseMint: MINT_A,
+            totalClaimableLamportsUserShare: 7,
+            isMigrated: false,
+            isCustomFeeVault: false,
+          },
+        ],
+        "claim-stats": () => [{ wallet: WALLET, totalClaimed: "0" }],
+        "partner-config/stats": () => new Response("boom", { status: 500 }),
+      }),
+    );
+    const tokens = await adapter.scanWallet(WALLET);
+    expect(tokens).toHaveLength(1);
+    expect(tokens[0]!.source).toBe("creator");
   });
 
   it("omits partner entry when config exists but has zero fees", async () => {

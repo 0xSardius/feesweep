@@ -22,6 +22,12 @@ export interface TokenFeeState {
   totalEarned: Lamports | null;
   /** Claimable right now. */
   claimable: Lamports;
+  /**
+   * Mint the claimable amount is denominated in (base58). Wrapped SOL for
+   * SOL-quoted pools; null when the platform doesn't say — treat as SOL only
+   * at display time, never when swapping.
+   */
+  quoteMint: string | null;
   /** Estimated accrual rate in lamports/day over the lookback window, null if unknown. */
   accrualPerDay: Lamports | null;
 }
