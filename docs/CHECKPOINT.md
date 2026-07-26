@@ -1,4 +1,12 @@
-# Checkpoint — July 26, 2026
+# Checkpoint — July 26, 2026 (evening)
+
+## Scanner web app SHIPPED (local)
+The full free-scanner funnel works end-to-end against mainnet at `pnpm --filter @feesweep/web dev`:
+- `/` — paste-any-wallet scanner (Emerald Ape neobrutalism, loading/empty/error states, browser-verified)
+- `/api/scan` — cross-platform scan + DAS metadata + snapshot persist (degrades if DB down)
+- `/scan/[wallet]` — shareable result page, dynamic title, X share + copy link
+- `/scan/[wallet]/opengraph-image` — live-generated brand card ("3.85 SOL sitting unclaimed"), Space fonts via Satori
+- Note: workspace switched to bundler moduleResolution / extensionless imports (Turbopack requirement). Never compile packages with plain tsc-to-node; run via tsx/bundler.
 
 ## State
 Week 1 build underway. Monorepo scaffolded (pnpm: `apps/web`, `packages/core`, `packages/adapters`, `services/keeper`), Emerald Ape brand applied, Drizzle schema + local Postgres compose in place.
