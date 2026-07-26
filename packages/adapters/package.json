@@ -10,13 +10,15 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "smoke:bags": "tsx --env-file=../../.env scripts/smoke-bags.ts"
   },
   "dependencies": {
     "@feesweep/core": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22",
+    "tsx": "^4",
     "typescript": "^5",
     "vitest": "^3"
   }
