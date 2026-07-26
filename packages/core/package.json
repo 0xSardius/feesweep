@@ -9,9 +9,18 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.44",
+    "postgres": "^3"
   },
   "devDependencies": {
+    "@types/node": "^22",
+    "drizzle-kit": "^0.31",
     "typescript": "^5"
   }
 }
