@@ -20,12 +20,12 @@ export interface LaunchpadAdapter {
   scanWallet(wallet: string): Promise<TokenFeeState[]>;
 
   /**
-   * Build the unsigned claim instruction(s) for the wallet's claimable fees.
-   * Returns base64-encoded serialized instructions; composed downstream into
-   * the propose-then-sign bundle (claim + swap + split + itemized skim).
-   * Week 2 — adapters may throw NotImplemented until then.
+   * Build the unsigned claim transaction(s) for the wallet's claimable fees.
+   * Platforms return whole serialized transactions (base58), not loose
+   * instructions — the week-2 bundle composer decomposes/sequences these into
+   * the propose-then-sign flow (claim + swap + split + itemized skim).
    */
-  buildClaimInstructions(wallet: string, mints: string[]): Promise<string[]>;
+  buildClaimTransactions(wallet: string, mints: string[]): Promise<string[]>;
 
   /** Cheap liveness probe against the platform surface this adapter depends on. */
   healthCheck(): Promise<AdapterHealth>;
@@ -33,12 +33,18 @@ export interface LaunchpadAdapter {
 
 /** Wraps every platform failure so callers never see platform-shaped errors. */
 export class AdapterError extends Error {
+  readonly platform: Platform;
+  /** HTTP status when the failure came from an API response. */
+  readonly status?: number;
+
   constructor(
-    readonly platform: Platform,
+    platform: Platform,
     message: string,
-    readonly cause?: unknown,
+    opts?: { cause?: unknown; status?: number },
   ) {
-    super(`[${platform}] ${message}`);
+    super(`[${platform}] ${message}`, { cause: opts?.cause });
     this.name = "AdapterError";
+    this.platform = platform;
+    this.status = opts?.status;
   }
 }

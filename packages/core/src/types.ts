@@ -7,7 +7,13 @@ export type Lamports = bigint;
 /** Fee state for one token the wallet created on one platform. */
 export interface TokenFeeState {
   platform: Platform;
-  /** Token mint address (base58). */
+  /**
+   * Where the fees come from: token creator royalties, or a platform-level
+   * partner/referral config (Bags partner configs are wallet-scoped, not
+   * per-token — those entries use the wallet address as `mint`).
+   */
+  source: "creator" | "partner";
+  /** Token mint address (base58); partner entries carry the wallet address. */
   mint: string;
   name: string | null;
   symbol: string | null;
