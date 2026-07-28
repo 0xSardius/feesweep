@@ -45,6 +45,35 @@ interface RpcResponse<T> {
  * serialized tx). Covers the bonding-curve vault only; the PumpSwap
  * collect_coin_creator_fee path is week-2 work.
  */
+/**
+ * Discover active pump.fun creator wallets via the (unofficial) frontend API.
+ * Metrics-job discovery only — kept in the adapter layer because this surface
+ * churns. Failures return what was gathered so far, never throw.
+ */
+export async function discoverPumpCreators(
+  limitPerSort = 50,
+  fetchImpl: typeof fetch = fetch,
+): Promise<string[]> {
+  const sorts = ["last_trade_timestamp", "market_cap"] as const;
+  const wallets = new Set<string>();
+  for (const sort of sorts) {
+    try {
+      const res = await fetchImpl(
+        `https://frontend-api-v3.pump.fun/coins?offset=0&limit=${limitPerSort}&sort=${sort}&order=DESC`,
+        { headers: { accept: "application/json" }, signal: AbortSignal.timeout(15_000) },
+      );
+      if (!res.ok) continue;
+      const coins = (await res.json()) as Array<{ creator?: string }>;
+      for (const coin of coins) {
+        if (coin.creator) wallets.add(coin.creator);
+      }
+    } catch {
+      // best effort — one sort failing shouldn't kill discovery
+    }
+  }
+  return [...wallets];
+}
+
 export class PumpfunAdapter implements LaunchpadAdapter {
   readonly platform = "pumpfun" as const;
   private rentExemptMin: bigint | null = null;
@@ -55,31 +84,41 @@ export class PumpfunAdapter implements LaunchpadAdapter {
   ) {}
 
   private async rpc<T>(method: string, params: unknown[]): Promise<T> {
-    let res: Response;
-    try {
-      res = await this.fetchImpl(this.rpcUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-      });
-    } catch (err) {
-      throw new AdapterError("pumpfun", `RPC network failure on ${method}`, {
-        cause: err,
-      });
+    // Helius 429s under burst load (metrics job) — back off and retry before
+    // surfacing, so one throttled call doesn't fail a whole wallet scan.
+    const MAX_ATTEMPTS = 3;
+    for (let attempt = 1; ; attempt++) {
+      let res: Response;
+      try {
+        res = await this.fetchImpl(this.rpcUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+          signal: AbortSignal.timeout(15_000),
+        });
+      } catch (err) {
+        throw new AdapterError("pumpfun", `RPC network failure on ${method}`, {
+          cause: err,
+        });
+      }
+      if ((res.status === 429 || res.status >= 500) && attempt < MAX_ATTEMPTS) {
+        await new Promise((r) => setTimeout(r, 400 * attempt));
+        continue;
+      }
+      if (!res.ok) {
+        throw new AdapterError("pumpfun", `RPC HTTP ${res.status} on ${method}`, {
+          status: res.status,
+        });
+      }
+      const body = (await res.json()) as RpcResponse<T>;
+      if (body.error) {
+        throw new AdapterError(
+          "pumpfun",
+          `RPC error on ${method}: ${body.error.message}`,
+        );
+      }
+      return body.result as T;
     }
-    if (!res.ok) {
-      throw new AdapterError("pumpfun", `RPC HTTP ${res.status} on ${method}`, {
-        status: res.status,
-      });
-    }
-    const body = (await res.json()) as RpcResponse<T>;
-    if (body.error) {
-      throw new AdapterError(
-        "pumpfun",
-        `RPC error on ${method}: ${body.error.message}`,
-      );
-    }
-    return body.result as T;
   }
 
   private async deriveVaults(wallet: string): Promise<{

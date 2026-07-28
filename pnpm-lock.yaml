@@ -97,6 +97,9 @@ importers:
       '@feesweep/core':
         specifier: workspace:*
         version: link:../../packages/core
+      drizzle-orm:
+        specifier: ^0.44.7
+        version: 0.44.7(postgres@3.4.9)
     devDependencies:
       '@types/node':
         specifier: ^22

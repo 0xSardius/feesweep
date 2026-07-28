@@ -1,5 +1,6 @@
 import type { AdapterHealth, TokenFeeState } from "@feesweep/core";
 import { AdapterError, type LaunchpadAdapter } from "./adapter";
+import { mapWithConcurrency } from "./util";
 
 const BASE_URL = "https://public-api-v2.bags.fm/api/v1";
 
@@ -31,6 +32,21 @@ interface PartnerStats {
   unclaimedFees: string;
 }
 
+export interface BagsFeedItem {
+  name: string;
+  symbol: string;
+  tokenMint: string;
+  status: string;
+}
+
+export interface BagsCreator {
+  wallet?: string;
+  isCreator?: boolean;
+  royaltyBps?: number;
+  username?: string;
+  twitterUsername?: string;
+}
+
 /**
  * Bags Public API v2 adapter. Read side: claimable royalty positions,
  * lifetime earned (claimed + claimable), and partner-config fee state.
@@ -39,18 +55,30 @@ interface PartnerStats {
  * Rate limit is 1,000 req/hr per key — scanWallet costs 2 + one claim-stats
  * call per token, so the aggregate metrics job must budget accordingly.
  */
+export interface BagsAdapterOptions {
+  /**
+   * Lite mode for aggregate/metrics scans: skip the per-token claim-stats
+   * calls and the partner-stats call, so a wallet scan costs exactly one API
+   * request. Claimable alone is the headline number; totalEarned degrades to
+   * null. (Rate budget: 1,000 req/hr — lessons 2026-07-26 #3.)
+   */
+  lite?: boolean;
+}
+
 export class BagsAdapter implements LaunchpadAdapter {
   readonly platform = "bags" as const;
 
   constructor(
     private readonly apiKey: string,
     private readonly fetchImpl: typeof fetch = fetch,
+    private readonly options: BagsAdapterOptions = {},
   ) {}
 
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
     let res: Response;
     try {
       res = await this.fetchImpl(`${BASE_URL}${path}`, {
+        signal: AbortSignal.timeout(15_000),
         ...init,
         headers: {
           "x-api-key": this.apiKey,
@@ -88,14 +116,16 @@ export class BagsAdapter implements LaunchpadAdapter {
       // claimable. Only a failed request degrades totalEarned to null — never
       // the whole scan.
       let totalEarned: bigint | null = null;
-      try {
-        const stats = await this.request<ClaimStat[]>(
-          `/token-launch/claim-stats?tokenMint=${encodeURIComponent(pos.baseMint)}`,
-        );
-        const mine = stats.find((s) => s.wallet === wallet);
-        totalEarned = BigInt(mine?.totalClaimed ?? 0) + claimable;
-      } catch {
-        totalEarned = null;
+      if (!this.options.lite) {
+        try {
+          const stats = await this.request<ClaimStat[]>(
+            `/token-launch/claim-stats?tokenMint=${encodeURIComponent(pos.baseMint)}`,
+          );
+          const mine = stats.find((s) => s.wallet === wallet);
+          totalEarned = BigInt(mine?.totalClaimed ?? 0) + claimable;
+        } catch {
+          totalEarned = null;
+        }
       }
 
       const token: TokenFeeState = {
@@ -117,10 +147,28 @@ export class BagsAdapter implements LaunchpadAdapter {
       return token;
     });
 
-    const partner = await this.partnerFeeState(wallet);
-    if (partner) tokens.push(partner);
+    if (!this.options.lite) {
+      const partner = await this.partnerFeeState(wallet);
+      if (partner) tokens.push(partner);
+    }
 
     return tokens;
+  }
+
+  /** Recent/active token launches — used by the metrics job for discovery. */
+  async launchFeed(): Promise<BagsFeedItem[]> {
+    return this.request<BagsFeedItem[]>("/token-launch/feed");
+  }
+
+  /**
+   * Wallets entitled to a token's fees. The deployer and the fee claimers are
+   * usually different wallets (lessons 2026-07-26 #7) — callers who want fee
+   * holders must filter on royaltyBps > 0, not isCreator.
+   */
+  async tokenCreators(tokenMint: string): Promise<BagsCreator[]> {
+    return this.request<BagsCreator[]>(
+      `/token-launch/creator/v3?tokenMint=${encodeURIComponent(tokenMint)}`,
+    );
   }
 
   /**
@@ -197,24 +245,4 @@ export class BagsAdapter implements LaunchpadAdapter {
       };
     }
   }
-}
-
-async function mapWithConcurrency<T, R>(
-  items: T[],
-  limit: number,
-  fn: (item: T) => Promise<R>,
-): Promise<R[]> {
-  const results: R[] = new Array(items.length);
-  let next = 0;
-  const workers = Array.from(
-    { length: Math.min(limit, items.length) },
-    async () => {
-      while (next < items.length) {
-        const i = next++;
-        results[i] = await fn(items[i]!);
-      }
-    },
-  );
-  await Promise.all(workers);
-  return results;
 }
