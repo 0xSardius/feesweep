@@ -1,3 +1,16 @@
+# Checkpoint — July 27, 2026
+
+## Week 1 build: COMPLETE except creator interviews
+- **Aggregate metrics job** (`pnpm --filter @feesweep/keeper job:aggregate`): **~2,575 SOL unclaimed across ~135 active creators** (bags 1,720 + pump 856, best per-platform runs). Kill-switch (≥1,000 SOL) PASSED 2.5x. Run at most hourly — Bags quota (lessons 2026-07-27).
+- **Telegram accrual alerts**: built (keeper `start` runs the loop; /watch /unwatch /list). BLOCKED on user creating a bot via @BotFather and filling TELEGRAM_BOT_TOKEN in .env.
+- **Local Postgres up** (docker compose), schema pushed, snapshots persisting.
+- **Creator interviews: 0/5–10** — the only kill-switch input still missing.
+
+## Next
+1. User: BotFather token → live-test alerts end-to-end.
+2. User: creator interview DMs (armed with the 2,575 SOL number).
+3. Then week 2 (PRD §5): policy builder UI, propose-then-sign claim→swap→split, billing. Watch: Bags tx decompose-vs-sequence question, PumpSwap claim instruction from pump_amm IDL.
+
 # Checkpoint — July 26, 2026 (evening)
 
 ## Scanner web app SHIPPED (local)
