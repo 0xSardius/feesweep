@@ -2,7 +2,7 @@
 
 ## Week 1 build: COMPLETE except creator interviews
 - **Aggregate metrics job** (`pnpm --filter @feesweep/keeper job:aggregate`): **~2,575 SOL unclaimed across ~135 active creators** (bags 1,720 + pump 856, best per-platform runs). Kill-switch (≥1,000 SOL) PASSED 2.5x. Run at most hourly — Bags quota (lessons 2026-07-27).
-- **Telegram accrual alerts**: built (keeper `start` runs the loop; /watch /unwatch /list). BLOCKED on user creating a bot via @BotFather and filling TELEGRAM_BOT_TOKEN in .env.
+- **Telegram accrual alerts**: LIVE — @feesweep_alerts_bot, end-to-end verified July 31 (watch registered, accrual alert delivered to user's chat). Keeper: `pnpm --filter @feesweep/keeper start` (ALERT_INTERVAL_SEC / ALERT_MIN_DELTA_SOL tunable). Ops note: only ONE keeper instance may run (Telegram getUpdates conflicts); on Windows, TaskStop can orphan the tsx child — kill node processes matching "keeper" before restarting.
 - **Local Postgres up** (docker compose), schema pushed, snapshots persisting.
 - **Creator interviews: 0/5–10** — the only kill-switch input still missing.
 

@@ -142,6 +142,9 @@ async function checkWallet(
       `+${fmt(delta)} SOL accrued on ${wallet.address}\n` +
         `claimable now: ${fmt(claimable)} SOL`,
     );
+    console.log(
+      `alerts: sent +${fmt(delta)} SOL alert for ${wallet.address} to chat ${wallet.telegramChatId}`,
+    );
   }
 }
 
