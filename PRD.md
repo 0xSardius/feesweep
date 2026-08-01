@@ -1,6 +1,6 @@
 # FeeSweep — Product Requirements Document
 
-**Version:** 1.0 · July 21, 2026
+**Version:** 1.1 · Aug 1, 2026 (v1.0 July 21; v1.1: skim-only MVP — subscriptions moved to phase 2, week-2 billing build dropped)
 **Status:** Approved for build (validated GO 13/15, conf 0.75 — see `validation-report.html`)
 **Owner:** solo build, 2-week MVP
 **Positioning:** The creator fee command center for Solana launchpads. *Never brand as "AI agent."*
@@ -35,8 +35,8 @@ FeeSweep watches accrual, and when the policy triggers, delivers a **pre-built t
 
 | Persona | Description | Job-to-be-done | Pays? |
 |---|---|---|---|
-| **Multi-launch creator** (primary) | Has launched 3+ tokens, often across platforms; fees accrue on several | "Show me everything I'm owed; move it where I want without babysitting" | Yes — skim + sub |
-| **Bags-native creator** | Lives in the Bags ecosystem, uses fee-shares/dividends | "Automate my claim→dividend routine" | Yes — sub; reached via Bags App Store |
+| **Multi-launch creator** (primary) | Has launched 3+ tokens, often across platforms; fees accrue on several | "Show me everything I'm owed; move it where I want without babysitting" | Yes — sweep skim |
+| **Bags-native creator** | Lives in the Bags ecosystem, uses fee-shares/dividends | "Automate my claim→dividend routine" | Yes — sweep skim; reached via Bags App Store |
 | **Curious wallet-checker** | Anyone pasting a wallet into the free scanner | "How much is this wallet leaving on the table?" | No — top of funnel, viral loop |
 | **Other agents/dashboards** (v1.5) | Bots and tools querying fee state programmatically | "Give me claimable-fee data for wallet X" | Per-call via x402 |
 
@@ -45,10 +45,10 @@ FeeSweep watches accrual, and when the policy triggers, delivers a **pre-built t
 | Stream | Price | When it starts |
 |---|---|---|
 | Sweep skim | **3% of value claimed** per executed sweep (min 0.01 SOL, cap 1 SOL/sweep) — undercuts Unclaimed SOL's 2–15% recovery pricing while being continuous | First sweep, day one |
-| Autopilot subscription | **$19/mo** (single wallet) / **$49/mo** (up to 5 wallets + priority alerts), billed in USDC on native Subscriptions & Allowances | Week 2 |
 | x402/MCP endpoint | `GET /claimable/{wallet}` at ~$0.01/call for agents/dashboards | v1.5 (one day of work; a surface, not a strategy) |
+| Autopilot subscription | Phase 2, additive — $19/mo single / $49/mo 5-wallet in USDC on native Subscriptions & Allowances, once there's something subscription-shaped (multi-wallet/team dashboards, premium alert routing); a "pro waives the skim" tier is a future lever | Phase 2 |
 
-Pricing stance: skim covers usage-based value; subscription covers the watching/alerting service. Either alone can be waived in early promos, never both.
+Pricing stance (MVP): **skim-only**. You pay only when you get paid — perfectly aligned, crypto-native (tx-fee mental model, not SaaS), and one signature from scan to paid instead of a checkout. Known trade-off, accepted: the skim is only captured on sweeps executed through FeeSweep — a creator can take a free alert and claim directly on the platform. The skim prices the *automation* (claim→swap→split in one signature); dodging it means doing that work manually, which is exactly the pain the product bets on. Users who'd dodge 3% weren't paying $19/mo either.
 
 ## 5. MVP scope (2 weeks)
 
@@ -59,10 +59,9 @@ Pricing stance: skim covers usage-based value; subscription covers the watching/
 - **Aggregate metrics job:** scan top-N creator wallets per platform → the "creators are sitting on X SOL unclaimed" number for the launch tweet.
 - **Telegram bot (read-only):** link wallet → accrual alerts at thresholds.
 
-### Week 2 — Autopilot + billing
+### Week 2 — Autopilot (skim-only monetization; no billing build)
 - **Policy builder UI:** threshold trigger + split rules (swap % via Jupiter Ultra, destination wallets, dividend-pool route on Bags).
-- **Propose-then-sign execution:** keeper detects trigger → builds claim + swap + transfer bundle → push notification → one-click sign in wallet. Skim transfer itemized in the same bundle.
-- **Subscription billing:** native Subscriptions & Allowances integration (USDC plans).
+- **Propose-then-sign execution:** keeper detects trigger → builds claim + swap + transfer bundle → push notification → one-click sign in wallet. Skim transfer itemized in the same bundle — this IS the monetization; no separate billing system in MVP.
 - **Ops:** Helius webhooks/polling keeper, adapter health monitoring (platform API churn is the #1 technical risk), basic dashboard of sweep history.
 
 ### Explicitly out of MVP scope
@@ -88,7 +87,7 @@ Pricing stance: skim covers usage-based value; subscription covers the watching/
 | End of week 1 | Creator interviews | ≥5 done; ≥3 describe post-claim pain (manual swapping/splitting/forgetting) |
 | **Kill-switch** | Both above fail | **Stop before week 2; re-rank Forecast Copilot / Gacha Edge** (per validation condition) |
 | Week 3 (launch +1) | Scanner→paid conversion | ≥3 paying wallets (any stream) |
-| Week 6 | Revenue | ≥$500/mo run-rate (skim + subs) or a clear growth trend; else evaluate pivot to phase-2 wedge (SplitRoute via App Store) |
+| Week 6 | Revenue | ≥$500/mo run-rate (skim; ≈ $17k/mo of fees swept at 3%) or a clear growth trend; else evaluate pivot to phase-2 wedge (SplitRoute via App Store) |
 
 ## 8. Technical architecture (integration-first — no custom programs)
 
@@ -100,7 +99,7 @@ Keeper service (Node, cron/queue)
   ├─ Accrual detection: Helius webhooks + polling fallback
   ├─ Tx composer: claim ixs + Jupiter Ultra swap + transfer splits + skim → one bundle
   └─ Alert dispatch: Telegram Bot API
-Billing: Solana native Subscriptions & Allowances (USDC plans)
+Billing: none in MVP — the in-bundle skim transfer is the revenue capture (subscriptions: phase 2)
 DB: Postgres (wallets, policies, sweep history, adapter health)
 v1.5: x402-gated /claimable/{wallet} endpoint (PayAI facilitator) + MCP wrapper
 ```
@@ -124,6 +123,7 @@ Key engineering rule: **adapters are isolated modules with health checks** — p
 3. **SplitRoute** — self-serve collab-launch fee splits on Bags partner configs (setup fee + 0.25–0.5% embedded skim as a fee earner).
 4. **Holder Club** — fan subscriptions on the native billing rail feeding the holder-dividend pool.
 5. **x402/MCP surface expansion** — fee-state data products for the agent economy.
+6. **Autopilot subscriptions** ($19/$49 in USDC on Subscriptions & Allowances) — added only when there's a subscription-shaped surface (multi-wallet/team dashboards, premium alert routing); consider "pro waives the skim."
 
 ## 11. Open questions (resolve during build, log answers in `lessons/`)
 
