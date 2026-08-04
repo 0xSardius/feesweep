@@ -1,3 +1,17 @@
+# Checkpoint — Aug 4, 2026
+
+## SCANNER IS LIVE: https://feesweep.vercel.app
+- Vercel project `feesweep` (team 0xsardius-projects), monorepo rootDirectory=apps/web, env vars set (BAGS/HELIUS/DATABASE_URL). Deploy: `npx vercel deploy --prod` from repo root.
+- Prod DB: Neon (pooled, sslmode=require) — `.env` DATABASE_URL now points at Neon (docker compose still available for local isolation). All 5 tables pushed; prod scans persisting.
+- Verified live: scans (Bags + pumpfun), DAS metadata, OG image, 400 on bad address, 10/min/IP rate limit on /api/scan.
+- PRD v1.1 (Aug 1): **skim-only MVP** — subscriptions moved to phase 2, week-2 billing build dropped.
+
+## Launch motions now unblocked (user)
+1. Bags App Store submission (assistant can prep materials)
+2. Launch tweet — refresh aggregate first (`pnpm --filter @feesweep/keeper job:aggregate`, mind hourly Bags quota)
+3. Creator interview DMs (0/5–10) — kill-switch input still open
+4. Week 2 build: propose-then-sign composer + policy builder UI
+
 # Checkpoint — July 27, 2026
 
 ## Week 1 build: COMPLETE except creator interviews
