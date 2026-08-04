@@ -1,10 +1,21 @@
 import { NextResponse } from "next/server";
 import { address } from "@solana/kit";
 import { runScan } from "@/lib/scan";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
+  const limit = checkRateLimit(ip);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: "too many scans — try again in a minute" },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSec) } },
+    );
+  }
+
   const wallet = new URL(request.url).searchParams.get("wallet")?.trim();
   if (!wallet) {
     return NextResponse.json({ error: "wallet is required" }, { status: 400 });
